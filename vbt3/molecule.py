@@ -207,14 +207,19 @@ class Molecule:
             return _SP_ZERO
 
         if self.precalculated_half_dets and op in ('H', 'S'):
-            iLa = self.lookup_a[L.alpha_string]
-            iRa = self.lookup_a[R.alpha_string]
-            iLb = self.lookup_b[L.beta_string.lower()]
-            iRb = self.lookup_b[R.beta_string.lower()]
-
-            if op == 'H':
-                return self.aH[iLa, iRa] * self.bS[iLb, iRb] + self.aS[iLa, iRa] * self.bH[iLb, iRb]
-            return self.aS[iLa, iRa] * self.bS[iLb, iRb]
+            # Fast path is only valid when both dets have the same alpha / beta
+            # electron counts as the precomputed basis. Two-electron operator
+            # construction synthesises sub-determinants with fewer electrons,
+            # which don't live in the precomputed lookup tables -- fall through
+            # to the general Hartree-product expansion below.
+            iLa = self.lookup_a.get(L.alpha_string)
+            iRa = self.lookup_a.get(R.alpha_string)
+            iLb = self.lookup_b.get(L.beta_string.lower())
+            iRb = self.lookup_b.get(R.beta_string.lower())
+            if None not in (iLa, iRa, iLb, iRb):
+                if op == 'H':
+                    return self.aH[iLa, iRa] * self.bS[iLb, iRb] + self.aS[iLa, iRa] * self.bH[iLb, iRb]
+                return self.aS[iLa, iRa] * self.bS[iLb, iRb]
 
         R_orbs, R_signs = R.get_orbital_permutations()
         terms = []
