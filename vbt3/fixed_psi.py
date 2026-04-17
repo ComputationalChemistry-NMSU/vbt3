@@ -141,6 +141,41 @@ class FixedPsi:
             if not merged:
                 self.add_det(d, c * coef)
 
+    def canonicalize(self):
+        """
+        Rewrite self so that every Slater determinant has its alpha- and beta-
+        orbital labels in alphabetic order. The permutation sign is folded into
+        the coefficient, and dets that collapse to identical canonical strings
+        are merged. Determinants whose coefficients cancel to zero are dropped.
+
+        After canonicalize(), every alpha_string matches a key produced by
+        generate_det_strings, so the precomputed-half-dets fast path in
+        Molecule.op_det works on this FixedPsi.
+        """
+        new_dets = []
+        new_coefs = []
+        for d, c in zip(self.dets, self.coefs):
+            sorted_fp = d.get_sorted()
+            cd = sorted_fp.dets[0]
+            cc = sorted_fp.coefs[0]
+            signed = attempt_int(c * cc)
+
+            merged = False
+            for i, existing in enumerate(new_dets):
+                if existing.det_string == cd.det_string:
+                    new_coefs[i] = attempt_int(new_coefs[i] + signed)
+                    merged = True
+                    break
+            if not merged:
+                new_dets.append(cd)
+                new_coefs.append(signed)
+
+        self.dets = [d for d, c in zip(new_dets, new_coefs) if c != 0]
+        self.coefs = [c for c in new_coefs if c != 0]
+        if not self.dets:
+            self.Nel = 0
+        return self
+
     def couple_orbitals(self, o1, o2):
         # generate determinants that represent a singlet bonding coupling between two orbitals.
         # Orbital numbering starts from 0

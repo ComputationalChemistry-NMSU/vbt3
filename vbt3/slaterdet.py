@@ -113,27 +113,26 @@ class SlaterDet:
         return True
 
     def get_sorted(self):
-        # sorts orbital labels in the determinant in alphabetic order
-        # returns FixedPsi
+        # Sorts orbital labels within alpha and beta blocks into alphabetic order
+        # (spin pattern unchanged). Returns FixedPsi with the sign from the
+        # required orbital permutation folded into the coefficient.
         sa, ia = sorti(self.alpha_string)
         sb, ib = sorti(self.beta_string)
 
         s = self.det_string
-        d = SlaterDet(s)
         for i in range(len(self.alpha_indices)):
             j = self.alpha_indices[i]
-            s = s[:j] + sa[i] + s[j+1:]
+            s = s[:j] + sa[i] + s[j + 1:]
 
         for i in range(len(self.beta_indices)):
             j = self.beta_indices[i]
-            s = s[:j] + sb[i] + s[j+1:]
+            s = s[:j] + sb[i] + s[j + 1:]
 
-        d.det_string = s
+        # Construct a fresh SlaterDet from the sorted string so internal
+        # fields (alpha_indices / alpha_string / etc.) reflect the new ordering.
+        d = SlaterDet(s)
 
-        if (ia + ib) % 2 == 0:
-            coef = 1
-        else:
-            coef = -1
+        coef = 1 if (ia + ib) % 2 == 0 else -1
         fp = vbt3.FixedPsi()
         fp.add_det(d, coef=coef)
         return fp
