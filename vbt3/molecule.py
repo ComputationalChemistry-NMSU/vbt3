@@ -8,6 +8,7 @@ from vbt3.functions import attempt_int, standardize_det, sort_ind, simplify_matr
 from vbt3.numerical import get_coupled
 from vbt3.fixed_psi import FixedPsi, generate_dets
 from vbt3.numerical import get_combined_from_dict
+from vbt3.slaterdet import SlaterDet
 
 
 @lru_cache(maxsize=None)
@@ -408,38 +409,42 @@ class Molecule:
                 int_name = self.subst_2e[r]
         return int_name
 
+    def get_o2_expr(self, v):
+        """Cached sympy expression for the two-electron integral over v (4 orbitals)."""
+        name = self.get_o2_name(v)
+        if name == '0':
+            return _SP_ZERO
+        return _cached_symbol(name)
+
     def o2_det(self, D1, D2):
         """
-        Computes the two-electron integrals between two determinants
-        Parameters
-        ----------
-        D1, D2: two objects SlaterDet
-
-        Returns
-        -------
-        Sympy symbolic expression, T_abcd \equiv <ab|cd>
+        Two-electron matrix element <D1|1/r_12|D2> between two SlaterDets.
+        Returns a sympy expression.  Uses Slater-Condon rules for arbitrary
+        spin-orbital occupations; evaluates in the (possibly non-orthogonal)
+        AO basis by computing overlap cofactors for the (N-2)-electron
+        sub-determinants via Op(op='S').
         """
         assert D1.Nel == D2.Nel, 'Different number of electrons'
         Nel = D1.Nel
         D1s = D1.det_string
         D2s = D2.det_string
-        off = int(Nel * (Nel - 1) / 2)
-        result = ['', ] * 2 * off ** 2
-        ind = 0
+
+        terms = []
         for i in range(Nel):
             for j in range(i + 1, Nel):
                 s1 = D1s[:i] + D1s[i + 1:j] + D1s[j + 1:]
                 c1, c2 = D1s[i], D1s[j]
                 sumL = c1.islower() + c2.islower()
-
                 sd1, f1 = standardize_det(s1)
+                sd1_obj = SlaterDet(sd1)
 
                 for k in range(Nel):
-                    for m in range(k + 1, Nel):
-                        s2 = D2s[:k] + D2s[k + 1:m] + D2s[m + 1:]
-                        c3, c4 = D2s[k], D2s[m]
+                    for mm in range(k + 1, Nel):
+                        s2 = D2s[:k] + D2s[k + 1:mm] + D2s[mm + 1:]
+                        c3, c4 = D2s[k], D2s[mm]
 
-                        if len(numpy.unique((c1.lower(),c2.lower(),c3.lower(),c4.lower()))) > self.max_2e_centers:
+                        if len(numpy.unique((c1.lower(), c2.lower(),
+                                             c3.lower(), c4.lower()))) > self.max_2e_centers:
                             continue
 
                         sumR = c3.islower() + c4.islower()
@@ -447,64 +452,56 @@ class Molecule:
                             continue
 
                         sd2, f2 = standardize_det(s2)
+                        sd2_obj = SlaterDet(sd2)
 
-                        opS = self.Op(sd1, sd2, op='S')
-                        if opS == '(0)':
+                        opS = self.op_det(sd1_obj, sd2_obj, op='S')
+                        if opS is _SP_ZERO:
                             continue
 
-                        parity = (i + j + k + m + f1 + f2) % 2
+                        parity = (i + j + k + mm + f1 + f2) % 2
 
                         if c1.islower() == c3.islower():
                             iv = (c1.lower(), c2.lower(), c3.lower(), c4.lower())
-                            int_name = self.get_o2_name(iv)
-                            sign = '(1)' if parity == 0 else '(-1)'
-                            result[ind] = '%s * %s * (%s)' % (sign, int_name, opS)
-                            ind += 1
+                            int_sym = self.get_o2_expr(iv)
+                            if int_sym is not _SP_ZERO:
+                                sign = 1 if parity == 0 else -1
+                                terms.append(sign * int_sym * opS)
 
                         if c1.islower() == c4.islower():
                             iv = (c1.lower(), c2.lower(), c4.lower(), c3.lower())
-                            int_name = self.get_o2_name(iv)
-                            sign = '(1)' if parity == 1 else '(-1)'
-                            result[ind] = '%s * %s * (%s)' % (sign, int_name, opS)
-                            ind += 1
+                            int_sym = self.get_o2_expr(iv)
+                            if int_sym is not _SP_ZERO:
+                                sign = 1 if parity == 1 else -1
+                                terms.append(sign * int_sym * opS)
 
-        if ind==0:
-            return '0'
-        else:
-            return ' + '.join(result[:ind])
+        if not terms:
+            return _SP_ZERO
+        if len(terms) == 1:
+            return terms[0]
+        return sp.Add(*terms)
 
     def o2_fixed_psi(self, L, R, op='H'):
-
         if len(L) == 0:
-            return 0
+            return _SP_ZERO
 
-        vo = ['', ] * 2 * len(L)
-        io = 0
+        terms = []
         for detL, cL in L:
-            vi = ['', ] * 2 * len(R)
-            ii = 0
             for detR, cR in R:
                 elem = self.o2_det(detL, detR)
-
-                prd = attempt_int(cL * cR)
+                if elem is _SP_ZERO:
+                    continue
+                prd = cL * cR
                 if prd == 1:
-                    prefix = '+'
+                    terms.append(elem)
                 elif prd == -1:
-                    prefix = '-'
+                    terms.append(-elem)
                 else:
-                    prefix = '+(%s)*' % str(prd)
-
-                vi[ii] = '%s(%s)' % (prefix, elem)
-                ii += 1
-
-            vo[io] = '(%s)' % ''.join(vi[:ii])
-            io += 1
-
-        s = '+'.join(vo[:io])
-        # simple cleanup
-        if s[0] == '+':
-            s = s[1:]
-        return s
+                    terms.append(prd * elem)
+        if not terms:
+            return _SP_ZERO
+        if len(terms) == 1:
+            return terms[0]
+        return sp.Add(*terms)
 
     def o2(self, L, R, op='H'):
         L = FixedPsi(L)
