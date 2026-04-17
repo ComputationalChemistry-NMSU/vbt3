@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import numpy
 import sympy as sp
 from scipy.stats import rankdata
@@ -6,6 +8,15 @@ from vbt3.functions import attempt_int, standardize_det, sort_ind, simplify_matr
 from vbt3.numerical import get_coupled
 from vbt3.fixed_psi import FixedPsi, generate_dets
 from vbt3.numerical import get_combined_from_dict
+
+
+@lru_cache(maxsize=None)
+def _cached_symbol(name):
+    return sp.Symbol(name)
+
+
+_SP_ZERO = sp.Integer(0)
+_SP_ONE = sp.Integer(1)
 
 
 class Molecule:
@@ -46,6 +57,8 @@ class Molecule:
 
         self.zero_ii = zero_ii
         self.max_2e_centers = max_2e_centers
+
+        self._o1_expr_cache = {}
 
     def generate_basis(self, Na, Nb, Norbs):
 
@@ -116,145 +129,130 @@ class Molecule:
 
         return s
 
+    def get_o1_expr(self, a, b, o):
+        # Cached sympy expression for a one-electron AO matrix element
+        key = (a, b, o)
+        cached = self._o1_expr_cache.get(key)
+        if cached is not None:
+            return cached
+        name = self.get_o1_name(a, b, o)
+        if name == '0':
+            expr = _SP_ZERO
+        elif name == '1':
+            expr = _SP_ONE
+        else:
+            expr = _cached_symbol(name)
+        self._o1_expr_cache[key] = expr
+        return expr
+
     def Op_Hartree_product(self, L_orbs, R_orbs, op='H'):
         # Computes a matrix element for two orbital products, e.g <A(1)b(2)...|O|A(1)b(2)...>.
-        # All product and sum elements are stored separately and are usable for producing Latex or Sympy output
-        # R_orbs is given as a string
+        # Returns a sympy expression.
 
         nL = len(L_orbs)
         nR = len(R_orbs)
 
         if nL != nR:
-            return 0
+            return _SP_ZERO
 
         if nL == 0:
-            return '1' if op == 'S' else '0'  # no orbitals, the vacuum case;
+            return _SP_ONE if op == 'S' else _SP_ZERO
 
         lL = L_orbs.lower()
         lR = R_orbs.lower()
 
-        v = ['', ] * nL
-        vi = 0
+        sum_terms = []
         for i_op in range(nL):
-            vp = ['', ] * nL
-            vpi = 0
-            # the product part
+            prod_factors = []
+            term_zero = False
             for j in range(nL):
                 o = op if i_op == j else 'S'
-                a, b = lL[j], lR[j]
-
-                s = self.get_o1_name(a, b, o)
-
-                if s != '1':
-                    vp[vpi] = s
-                    vpi += 1
-                if s == '0':
+                s = self.get_o1_expr(lL[j], lR[j], o)
+                if s is _SP_ZERO:
+                    term_zero = True
                     break
+                if s is _SP_ONE:
+                    continue
+                prod_factors.append(s)
 
-            if vpi == 0:  # all 1s
-                elem = '1'
+            if term_zero:
+                elem = _SP_ZERO
+            elif not prod_factors:
+                elem = _SP_ONE
+            elif len(prod_factors) == 1:
+                elem = prod_factors[0]
             else:
-                if '0' in vp:
-                    elem = '0'
-                else:
-                    elem = '*'.join(vp[:vpi])
+                elem = sp.Mul(*prod_factors)
 
             if op == 'S':
-                # all Hartree products are the same
-                # just multiply the first HP by the number of rows
-                return '(%s)' % (elem)
+                # All Hartree products in <L|S|R> are identical; one is enough.
+                return elem
 
-            if elem != '0':
-                v[vi] = elem
-                vi += 1
+            if elem is not _SP_ZERO:
+                sum_terms.append(elem)
 
-        if vi == 0: # all 0
-            elems = '0'
-        else:
-            elems = ' + '.join(v[:vi])
-
-        return '(%s)' % elems
+        if not sum_terms:
+            return _SP_ZERO
+        if len(sum_terms) == 1:
+            return sum_terms[0]
+        return sp.Add(*sum_terms)
 
     op_orbprod = Op_Hartree_product
 
     def op_det(self, L, R, op='H'):
-        # Returns the matrix element < L | O | R >
+        # Returns the matrix element < L | O | R > as a sympy expression.
         # L, R are instances of SlaterDet
 
-        # test for the determinant spin compatibility
         if not R.is_compatible(L):
-            return 0
+            return _SP_ZERO
 
         if self.precalculated_half_dets and op in ('H', 'S'):
-            # get indices
             iLa = self.lookup_a[L.alpha_string]
             iRa = self.lookup_a[R.alpha_string]
             iLb = self.lookup_b[L.beta_string.lower()]
             iRb = self.lookup_b[R.beta_string.lower()]
 
             if op == 'H':
-                result = (self.aH[iLa, iRa] * self.bS[iLb, iRb] + self.aS[iLa, iRa] * self.bH[iLb, iRb]) / 2
-            else:
-                result = self.aS[iLa, iRa] * self.bS[iLb, iRb]
-            return result
+                return self.aH[iLa, iRa] * self.bS[iLb, iRb] + self.aS[iLa, iRa] * self.bH[iLb, iRb]
+            return self.aS[iLa, iRa] * self.bS[iLb, iRb]
 
-        # Hardcore way
-        [R_orbs, R_signs] = R.get_orbital_permutations()
-        # sm = ''
-        v = ['', ] * len(R_orbs)
-        i = 0
+        R_orbs, R_signs = R.get_orbital_permutations()
+        terms = []
         for R_orb, R_sign in zip(R_orbs, R_signs):
-            elems = self.op_orbprod(L.det_string, R_orb, op=op)
-            if len(elems) == '0':
-                return '0'
-            if R_sign == 1:
-                v[i] = '+(%s)' % elems
-            else:
-                v[i] = '-(%s)' % elems
-            i += 1
+            elem = self.op_orbprod(L.det_string, R_orb, op=op)
+            if elem is _SP_ZERO:
+                continue
+            terms.append(elem if R_sign == 1 else -elem)
 
-        sm = ''.join(v[:i])
-
-        # simple cleanup
-        if sm[0] == '+':
-            sm = sm[1:]
-        return '(%s)' % sm
+        if not terms:
+            return _SP_ZERO
+        if len(terms) == 1:
+            return terms[0]
+        return sp.Add(*terms)
 
     def op_fixed_psi(self, L, R, op='H'):
-        s = ''
-
         if len(L) == 0:
-            s = '1' if op == 'S' else 0
-            return s
+            return _SP_ONE if op == 'S' else _SP_ZERO
 
-        vo = ['', ] * len(L)
-        io = 0
+        sum_terms = []
         for detL, cL in L:
-
-            vi = ['', ] * len(R)
-            ii = 0
             for detR, cR in R:
                 elem = self.op_det(detL, detR, op=op)
-
-                prd = attempt_int(cL * cR)
+                if elem is _SP_ZERO:
+                    continue
+                prd = cL * cR
                 if prd == 1:
-                    prefix = '+'
+                    sum_terms.append(elem)
                 elif prd == -1:
-                    prefix = '-'
+                    sum_terms.append(-elem)
                 else:
-                    prefix = '+(%s)*' % str(prd)
+                    sum_terms.append(prd * elem)
 
-                vi[ii] = '%s(%s)' % (prefix, elem)
-                ii += 1
-
-            vo[io] = '(%s)' % ''.join(vi[:ii])
-            io += 1
-
-        s = '+'.join(vo[:io])
-        # simple cleanup
-        if s[0] == '+':
-            s = s[1:]
-        return s
+        if not sum_terms:
+            return _SP_ZERO
+        if len(sum_terms) == 1:
+            return sum_terms[0]
+        return sp.Add(*sum_terms)
 
     def Op(self, L, R, op='H'):
         L = FixedPsi(L)
@@ -262,11 +260,9 @@ class Molecule:
         return self.op_fixed_psi(L, R, op=op)
 
     def Ops(self, L, R, op='H', find_factors=True):
-        s = self.Op(L=L, R=R, op=op)
+        z = self.Op(L=L, R=R, op=op)
         if find_factors:
-            z = sp.factor(s)
-        else:
-            z = sp.sympify(s)
+            z = sp.factor(z)
         return z
 
     def getS(self, L, R, find_factors=True):
@@ -281,18 +277,66 @@ class Molecule:
         :param u: array of FixedPsi, SlaterDet, or str
         :param op: the integration operator
         :return: SymPy matrix with integrals
-
-        Parameters
-        ----------
-        sympify: whether to convert to sympy expression
         """
         N = len(u)
         m = sp.zeros(N)
+        if N == 0:
+            return m
+
+        # Coerce each entry to a FixedPsi for uniform handling, and pre-compute
+        # the set of spin patterns it carries. Two FixedPsi are guaranteed to
+        # yield zero whenever their spin-pattern sets are disjoint -- skip those
+        # pairs entirely instead of running the full Op machinery.
+        psis = [None] * N
+        spin_keys = [None] * N
+        for i, entry in enumerate(u):
+            if isinstance(entry, str):
+                fp = FixedPsi(entry)
+            elif entry.__class__.__name__ == 'SlaterDet':
+                fp = FixedPsi(entry)
+            else:
+                fp = entry
+            psis[i] = fp
+            spin_keys[i] = frozenset(d.spins for d in fp.dets)
+
+        # Inline fast-path: when half-dets are precomputed and every basis entry
+        # is a single Slater determinant with unit coefficient, skip the
+        # FixedPsi/Op layer and index aH/aS/bH/bS directly.
+        fast = (self.precalculated_half_dets and op in ('H', 'S')
+                and all(len(p.dets) == 1 and p.coefs[0] == 1 for p in psis))
+
+        if fast:
+            half = [None] * N
+            for i, p in enumerate(psis):
+                d = p.dets[0]
+                half[i] = (self.lookup_a[d.alpha_string],
+                           self.lookup_b[d.beta_string.lower()],
+                           d.spins)
+            aH, aS, bH, bS = self.aH, self.aS, self.bH, self.bS
+            for i in range(N):
+                iLa, iLb, sL = half[i]
+                for j in range(i, N):
+                    iRa, iRb, sR = half[j]
+                    if sL != sR:
+                        continue
+                    if op == 'H':
+                        v = aH[iLa, iRa] * bS[iLb, iRb] + aS[iLa, iRa] * bH[iLb, iRb]
+                    else:
+                        v = aS[iLa, iRa] * bS[iLb, iRb]
+                    m[i, j] = v
+                    if i != j:
+                        m[j, i] = v
+            return m
+
         for i in range(N):
+            ki = spin_keys[i]
             for j in range(i, N):
-                m[i, j] = self.Op(u[i], u[j], op=op)
+                if ki.isdisjoint(spin_keys[j]):
+                    continue
+                v = self.op_fixed_psi(psis[i], psis[j], op=op)
+                m[i, j] = v
                 if i != j:
-                    m[j, i] = m[i, j]
+                    m[j, i] = v
         return m
 
     def energy(self, P, o2=False):

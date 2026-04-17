@@ -27,25 +27,25 @@ class TestMolecule(unittest.TestCase):
     def test_op_hartree_product_1(self):
         self.assertEqual(
             str(Molecule().Op_Hartree_product('AaBb', 'CcDd')),
-            '(H_ac*S_ac*S_bd*S_bd + S_ac*H_ac*S_bd*S_bd + S_ac*S_ac*H_bd*S_bd + S_ac*S_ac*S_bd*H_bd)'
+            '2*H_ac*S_ac*S_bd**2 + 2*H_bd*S_ac**2*S_bd'
         )
 
     def test_op_hartree_product_2(self):
         self.assertEqual(
             str(Molecule().Op_Hartree_product('aAbBcC', 'aAbBcC', op='H')),
-            '(0)'
+            '0'
         )
 
     def test_op_hartree_product_3(self):
         self.assertEqual(
             str(Molecule().Op_Hartree_product('aA', 'aB', op='H')),
-            '(H_ab)'
+            'H_ab'
         )
 
     def test_op_hartree_product_4(self):
         self.assertEqual(
             str(Molecule().Op_Hartree_product('AaBb', 'CcDd', op='S')),
-            '(S_ac*S_ac*S_bd*S_bd)'
+            'S_ac**2*S_bd**2'
         )
 
     def test_op_1(self):
@@ -103,7 +103,7 @@ class TestMolecule(unittest.TestCase):
         m = m.op_det(sd, sd)
         self.assertEqual(
             str(m),
-            '-2*h*s*(1 - s**2)'
+            '-4*h*s*(1 - s**2)'
         )
 
     def test_op_det_fast_2(self):
