@@ -124,21 +124,22 @@ class FixedPsi:
 
     def add_fixedpsi(self, p, coef=1.0):
         for d, c in p:
-            # check if d is aleady in p
+            merged = False
+            # check if d is already in self
             for i in range(len(self)):
                 if self.dets[i].det_string == d.det_string:
-                    # change the coefficient
                     self.coefs[i] += c
-                    # if it turns to be 0, shift left the remaining dets
+                    # if it turns to 0, shift left the remaining dets
                     if self.coefs[i] == 0:
-                        for j in range(i, len(self)-1):
-                            self.dets[j] = self.dets[j+1]
-                            self.coefs[j] = self.coefs[j+1]
+                        for j in range(i, len(self) - 1):
+                            self.dets[j] = self.dets[j + 1]
+                            self.coefs[j] = self.coefs[j + 1]
                         self.dets = self.dets[:-1]
                         self.coefs = self.coefs[:-1]
-                    return
-            # det is not in the psi; add it
-            self.add_det(d, c * coef)
+                    merged = True
+                    break
+            if not merged:
+                self.add_det(d, c * coef)
 
     def couple_orbitals(self, o1, o2):
         # generate determinants that represent a singlet bonding coupling between two orbitals.
