@@ -149,9 +149,15 @@ def figure_2_allyl():
                       vmin=-np.abs(H_sym).max(), vmax=np.abs(H_sym).max())
     ax[0].axhline(len(U_plus) - 0.5, color='k', lw=1)
     ax[0].axvline(len(U_plus) - 0.5, color='k', lw=1)
-    ax[0].set_title(r'(a)  $H$ in $\{\sigma=+1, \sigma=-1\}$ basis  ($U=2$)')
-    ax[0].text(2, -0.8, r'$\sigma=+1$  (5×5)', ha='center', fontsize=10)
-    ax[0].text(7, -0.8, r'$\sigma=-1$  (4×4)', ha='center', fontsize=10)
+    ax[0].set_title(r'(a)  $H$ in $\sigma$-adapted basis  ($U=2$)')
+    n_plus = len(U_plus)
+    ax[0].text(0.5 * (n_plus - 1), n_plus / 2 - 0.5, r'$\sigma=+1$' + '\n' + r'$(5\times 5)$',
+               ha='center', va='center', fontsize=10,
+               bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='none', alpha=0.85))
+    ax[0].text(n_plus + 0.5 * (9 - n_plus - 1), n_plus + 0.5 * (9 - n_plus - 1),
+               r'$\sigma=-1$' + '\n' + r'$(4\times 4)$',
+               ha='center', va='center', fontsize=10,
+               bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='none', alpha=0.85))
     plt.colorbar(im, ax=ax[0], fraction=0.045, pad=0.03)
 
     # (b) Taylor convergence
