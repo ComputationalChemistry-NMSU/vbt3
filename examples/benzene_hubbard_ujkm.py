@@ -130,6 +130,38 @@ for ni in range(1, Nd):
 E_2 = sp.expand(sp.simplify(E_2))
 print(f"\nE_2 = {E_2}")
 
+# Also compute E_3 via Wigner 2n+1 with |psi_1>
+# |psi_1>[m] = V[m,0] / (E_0 - E_m) for m != 0
+print("\nComputing E_3 (Feenberg recursion) ...")
+r_diag = [sp.Rational(0)] * Nd
+for n in range(1, Nd):
+    denom = E0 - eig[n][0]
+    if denom != 0:
+        r_diag[n] = sp.Rational(1) / denom
+psi1 = [sp.Rational(0)] * Nd
+for mi in range(1, Nd):
+    psi1[mi] = sp.simplify(r_diag[mi] * V_mn[mi, 0])
+# E_3 = <psi_1|V|psi_1> - E_1 <psi_1|psi_1>
+t0 = time.time()
+psi1_V_psi1 = sp.simplify(sum(
+    psi1[i] * V_mn[i, j] * psi1[j]
+    for i in range(Nd) for j in range(Nd)
+))
+psi1_psi1 = sp.simplify(sum(psi1[i] ** 2 for i in range(Nd)))
+E_3 = sp.simplify(psi1_V_psi1 - E_1 * psi1_psi1)
+print(f"  {time.time() - t0:.1f}s")
+print(f"\nE_3 = {E_3}")
+
+# Test (U - J) reduction at E_3
+x = sp.Symbol('x')
+E3_fixed = sp.expand(E_3.subs(U, x + J))
+print("\n(U - J) reduction test at 3rd order:")
+for k in range(1, 4):
+    print(f"  J^{k} coefficient at fixed (x=U-J, K, M): "
+          f"{sp.simplify(E3_fixed.coeff(J, k))}")
+E3_clean = sp.collect(sp.expand(E3_fixed), [x, K, M])
+print(f"\nE_3 in terms of x = U - J:\n  {E3_clean}")
+
 # Monomial inventory
 print("\nMonomial coefficients of E_2:")
 for mono in [U**2, J**2, K**2, M**2, U*J, U*K, U*M, J*K, J*M, K*M]:
