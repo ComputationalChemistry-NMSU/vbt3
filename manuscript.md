@@ -152,7 +152,39 @@ Three features of Eq. (9) are worth stressing:
    over those 19 channels. Equation (10), evaluated from the Hückel MO spectrum `{−2, −1, −1, +1, +1, +2}` and the momentum-conservation rule on a 6-site ring, reproduces `E₂` to the last digit. Higher-order coefficients follow the same pattern with denominators `N^{4n−2} · 2^{α_n}`.
 3. **Radius of convergence.** The Taylor series (9) is accurate to better than 1 % for `u ≲ 2`, adequate to `u ≲ 4`, and divergent at `u ≳ 6`. Real benzene sits at `U/t ≈ 4`, marginally inside the Taylor regime.
 
-### 4.4 Padé resummation for strong correlation
+### 4.4 Extension to PPP integrals: the (U − J) effective-parameter reduction
+
+Generalising the perturbation beyond on-site `U` to include the two-center exchange `J = (ab|ab)` and direct Coulomb `K = (aa|bb)` (with the three-index `M` integrals set to zero in the strict ZDO approximation), the second-order Rayleigh–Schrödinger coefficient becomes a quadratic polynomial in three variables:
+
+$$
+E_2(U, J, K) = -\tfrac{1}{288}\big[29(U - J)^2 - 56\,K\,(U - J) + 288\,K^2\big] \qquad \text{(benzene)}\tag{12}
+$$
+
+The same `(U − J)`-substitution structure emerges for allyl:
+
+$$
+E_2^{\text{allyl}}(U, J, K) = \tfrac{\sqrt{2}}{512}\big[-21(U - J)^2 - 28K(U - J) - 52K^2\big].\tag{13}
+$$
+
+In both systems, the coefficient multiplying `(U − J)²` is *identically* the pure-Hubbard MP2 coefficient — `−29/288` for benzene, `−√2·21/512` for allyl — reported in Section 4.3 and in the allyl analogue. The third parameter `J` does not introduce a new correlation channel; it renormalises the effective on-site repulsion. The `K` channel by contrast opens an independent quadratic term (`−K²` for benzene, `−52√2K²/512` for allyl) plus a cross coupling to `(U − J)`.
+
+**Operator origin.** Inspection of the MO-basis matrix elements traces the reduction to an exact operator identity on the closed-shell Hückel reference:
+
+$$
+\hat V_J\,|\Psi_{\text{HF}}\rangle \;=\; -\hat V_U\,|\Psi_{\text{HF}}\rangle.\tag{14}
+$$
+
+We verify this numerically: summing the 37 excited-state matrix elements `⟨n|\hat V_U|\Psi_0⟩ + ⟨n|\hat V_J|\Psi_0⟩` produces exactly zero in the entire A₁g block of benzene (the analogous identity holds in the allyl 5-dim block). Because every virtual state that is coupled to the reference by `\hat V_U` is coupled *equally and oppositely* by `\hat V_J`, the full perturbation `(U\hat V_U + J\hat V_J + K\hat V_K)|\Psi_{\text{HF}}⟩` collapses to `(U − J)\hat V_U|\Psi_{\text{HF}}⟩ + K\hat V_K|\Psi_{\text{HF}}⟩`, and the second-order sum inherits the pure-Hubbard coefficient on its `(U − J)²` term. The identity also propagates to higher RS orders, confirmed symbolically through `E_4` for benzene.
+
+**Relation to the literature.** The `(U − J)` combination as an effective-interaction scale is familiar in several established mean-field contexts. In Stoner theory of itinerant ferromagnetism the instability criterion depends on `(U − J_H)·ρ(E_F)`, where `J_H` is the intra-atomic Hund's-rule exchange.¹ The multi-orbital Kanamori–Hubbard Hamiltonian enforces the specific rotational-invariance relation `U′ = U − 2J` between intra- and inter-orbital repulsion on a single atom.² Constrained-RPA downfolding of ab initio integrals onto low-energy Hubbard models routinely produces screened on-site parameters that are linear combinations of bare `U` and exchange components.³ The common thread is that exchange-type integrals renormalise on-site repulsion in an effective-Hamiltonian sense.
+
+Three features distinguish the present result from that literature. First, our `J` is the two-center integral `(ab|ab)` between *distinct atoms* in a single-orbital PPP/Hubbard Hamiltonian, not the intra-atomic Hund's exchange that appears in the Stoner and Kanamori frameworks. Second, the reduction operates at second-order *correlation* rather than at the mean-field level: the first-order (Hartree–Fock) coefficients `3U/2` and `27J/2` in benzene are not simple multiples of each other and do *not* combine into `E_1 ∝ (U − J)`. Third, the identity Eq. (14) is exact within the PPP/ZDO limit (orthogonal AOs, three-index integrals set to zero) rather than an approximation or perturbative renormalisation. Together these three features leave a specific gap in the existing literature that the present symbolic result fills — although, given the technical-paper-density of PPP- and π-system-correlation literature from the 1970s–1990s, we do not rule out an earlier statement of Eq. (14) that has escaped our search and invite readers to flag prior art.
+
+Two caveats temper the scope of the result. The cancellation depends on the closed-shell Hückel reference and on the strict ZDO approximation — non-zero AO overlap `s` and retained three-index integrals `M` reintroduce `U`- and `J`-channel cross-terms that break the exact operator identity. Real π-system chemistry (`s ≈ 0.25` at benzene C–C distances, `M/U ≈ 0.1` in minimum-basis estimates) would see a residual dependence on `J` at fixed `(U − J, K)`, though numerical tests suggest this residual is small and qualitatively correlation-preserving. Extending the analysis to open-shell reference states (radicals, biradicals, triplet ground states) would change the cancellation structure entirely and potentially reveal new effective-parameter combinations — an avenue we have not explored.
+
+---
+
+### 4.5 Padé resummation for strong correlation
 
 A `[2/4]` Padé approximant built from Eq. (9) extends the practical range of the series by roughly an order of magnitude in `U`:
 
@@ -164,7 +196,7 @@ Comparison to exact diagonalization shows that Eq. (11) is accurate to 10⁻⁵ 
 
 The rational coefficients of Eq. (11) are unstructured (seven-digit integer numerators over eleven-digit denominators). This is strong evidence that the 400-determinant benzene Hubbard ground-state energy does **not** admit an elementary closed form of the kind found in Eq. (7) for the one-electron problem. It is a genuine algebraic function of degree ≤ 38 (the `A₁g` block dimension) that cannot be reduced further without additional symmetry (e.g., explicit total-spin projection).
 
-### 4.5 Smaller systems: H₂ and allyl
+### 4.6 Smaller systems: H₂ and allyl
 
 Applying the same machinery to smaller systems yields closed forms whose structure illuminates the benzene case.
 
@@ -207,7 +239,7 @@ Three features distinguish Eq. (15) from Eq. (9):
 
    reproducing E₁ exactly. The `ρ = 3/2` at terminal sites is the quantitative signature of the allyl lone-pair character on atoms a and c.
 
-### 4.6 Application: aromaticity loss in the benzene + O₃ [3+2] cycloaddition
+### 4.7 Application: aromaticity loss in the benzene + O₃ [3+2] cycloaddition
 
 The benzene π-system closed form (Eq. 7) and the full 400-determinant CI machinery together permit a direct analysis of how aromaticity is lost when one C=C bond of benzene is perturbed. We model the [3+2] cycloaddition of ozone with benzene by introducing a single dimensionless reaction coordinate `λ ∈ [0, 1]` that scales the resonance integral on the attacked edge,
 
@@ -219,7 +251,7 @@ The dominant qualitative signature of the aromaticity loss is the collapse of th
 
 Quantitatively, the Kekulé resonance energy `RE_Kek = min{E_Kek₁, E_Kek₂} − E_full` decays from 0.405 |β| at `λ = 1` to 0.170 |β| at `λ = 0` — a halving of the aromatic stabilisation. The full-CI ground state drops from −6.19 to −5.49 |β| over the same scan, and essentially the entire energetic signature of aromaticity loss (~0.7 |β| out of 0.71 |β|) is carried by the ionic subspace: the covalent 5-structure ground state barely changes (−1.04 to −0.99 |β|) because the surviving Kekulé contains enough intact π-bonds to replace the lost one. This is a clean quantitative illustration of the familiar chemical picture: *aromaticity is a many-structure phenomenon, and removing a single bond does not destroy it immediately — it redistributes over the remaining Kekulé–Dewar manifold, with the binding energy increasingly carried by charge-separated (ionic) configurations.* 
 
-### 4.7 Cross-system summary
+### 4.8 Cross-system summary
 
 | System | Dets | `A_1` block | `E_0 / t` | Closed form for `E(U)` |
 |---|---|---|---|---|
@@ -253,12 +285,15 @@ on the branch `two-electron-integrals`.
 
 Worked examples most directly supporting the findings:
 
-- `benzene_aromaticity_loss.py` — Section 4.6; aromaticity loss under asymmetric perturbation.
+- `benzene_aromaticity_loss.py` — Section 4.7; aromaticity loss under asymmetric perturbation.
 - `benzene_symmetry_demo.py` — Section 4.2; degeneracy analysis and orbit-sum reduction.
-- `h2_hubbard_bond.py` — Section 4.5; H₂ Hubbard closed form.
-- `allyl_hubbard_pt.py` — Section 4.5; 3c4e PT series.
-- `benzene_hubbard_pt.py` — Sections 4.3; benzene RS series through E₆ and MP2 decoding.
-- `benzene_hubbard_pade.py` — Section 4.4; Padé resummation.
+- `h2_hubbard_bond.py` — Section 4.6; H₂ Hubbard closed form.
+- `h2_hubbard_ujk.py` — Section 4.4; H₂ with full (U, J, K) integrals.
+- `allyl_hubbard_pt.py` — Section 4.6; 3c4e PT series.
+- `allyl_hubbard_ujk.py` — Section 4.4; 3c4e (U, J, K) second-order coefficients.
+- `benzene_hubbard_pt.py` — Section 4.3; benzene RS series through E₆ and MP2 decoding.
+- `benzene_hubbard_ujk.py` — Section 4.4; benzene (U, J, K) second-order coefficients and the (U − J) operator identity.
+- `benzene_hubbard_pade.py` — Section 4.5; Padé resummation.
 
 ---
 
