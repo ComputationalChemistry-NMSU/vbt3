@@ -178,6 +178,85 @@ def s_squared_matrix(det_strings, orbs=None):
     return S2
 
 
+def _apply_eta_pl_eta_mi(orbs, site_sign, alpha, beta):
+    """
+    Apply  eta_+ eta_-  =  sum_{i,j} s_i s_j c^+_{i alpha} c^+_{i beta}
+                                            c_{j beta} c_{j alpha}
+    to |D> (alpha, beta occupation sets), where s_i = site_sign[i] = +/-1.
+    Returns a dict { canonical_det_string : signed_coefficient, ... }.
+    """
+    out = {}
+    for j in orbs:
+        # c_{j alpha}
+        a1, b1, s1 = _apply_c(alpha, beta, j, 0, create=False)
+        if a1 is None:
+            continue
+        # c_{j beta}
+        a2, b2, s2 = _apply_c(a1, b1, j, 1, create=False)
+        if a2 is None:
+            continue
+        for i in orbs:
+            # c^+_{i beta}
+            a3, b3, s3 = _apply_c(a2, b2, i, 1, create=True)
+            if a3 is None:
+                continue
+            # c^+_{i alpha}
+            a4, b4, s4 = _apply_c(a3, b3, i, 0, create=True)
+            if a4 is None:
+                continue
+            sign = s1 * s2 * s3 * s4 * site_sign[i] * site_sign[j]
+            key = _canon_det(a4, b4)
+            if key is None:
+                continue
+            out[key] = out.get(key, 0) + sign
+    return out
+
+
+def eta_squared_matrix(det_strings, site_signs, orbs=None):
+    """
+    Build the eta-pseudospin squared matrix  eta^2  in a Slater-det basis
+    at eta_z = (N - L) / 2 = 0  (half-filling on a bipartite lattice).
+
+    The eta operators are
+        eta_+ = sum_i  s_i  c^+_{i alpha} c^+_{i beta}
+        eta_- = (eta_+)^dagger
+        eta_z = (N_total - L) / 2
+    where s_i = +/-1 is the sublattice sign.  On a bipartite nearest-
+    neighbor hopping lattice at half-filling, [H, eta_+-] = 0; on adding
+    Hubbard U this reduces to [H, eta_z] = 0 only.
+
+    Parameters
+    ----------
+    det_strings : list of vbt3 Slater-det strings, all at N = L.
+    site_signs : dict {orbital_label: +1 or -1} encoding the bipartition.
+    orbs : optional list of orbital labels (inferred from site_signs if
+           omitted).
+
+    Returns
+    -------
+    eta2 : (N, N) ndarray.  Eigenvalues are eta(eta+1) for eta = 0, 1, 2, ...
+    """
+    if orbs is None:
+        orbs = sorted(site_signs.keys())
+    orbital_index = {orb: k for k, orb in enumerate(orbs)}
+    vbt3_sign = np.array([_vbt3_to_canonical_sign(ds, orbital_index)
+                          for ds in det_strings], dtype=float)
+
+    index = {ds: i for i, ds in enumerate(det_strings)}
+    N = len(det_strings)
+    E2 = np.zeros((N, N), dtype=float)
+    for col, ds in enumerate(det_strings):
+        alpha = {c for c in ds if c.islower()}
+        beta  = {c.lower() for c in ds if c.isupper()}
+        contributions = _apply_eta_pl_eta_mi(orbs, site_signs, alpha, beta)
+        for key, coef in contributions.items():
+            row = index.get(key)
+            if row is not None:
+                E2[row, col] += coef
+    E2 = vbt3_sign[:, None] * E2 * vbt3_sign[None, :]
+    return E2
+
+
 def project_onto_S(H, S2, target_S, tol=1e-8):
     """
     Project H onto the eigenspace of S^2 with eigenvalue target_S * (target_S + 1).
