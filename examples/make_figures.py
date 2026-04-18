@@ -366,6 +366,111 @@ def figure_5_aromaticity():
 
 
 # =======================================================================
+# Figure 6 - (H2)2+ disphenoid: pseudo-JT instability and III <-> II
+# =======================================================================
+def figure_6_disphenoid():
+    # Build 3e and 4e disphenoid Hamiltonians once
+    m = Molecule(
+        zero_ii=True,
+        interacting_orbs=['ab', 'cd', 'ac', 'ad', 'bc', 'bd'],
+        subst={'h_s_1': ('H_ab',), 'h_s_2': ('H_cd',),
+               'h_l':   ('H_ac', 'H_ad', 'H_bc', 'H_bd'),
+               's':     ('S_ab', 'S_cd', 'S_ac', 'S_ad', 'S_bc', 'S_bd')},
+        subst_2e={'U': ('1111',)}, max_2e_centers=1,
+    )
+    hs1, hs2, hl, s_sym, Usym = sp.symbols('h_s_1 h_s_2 h_l s U')
+    syms = [hs1, hs2, hl, Usym]
+
+    def decomp(Na, Nb):
+        P = generate_dets(Na, Nb, 4)
+        H = sp.Matrix(m.build_matrix(P, op='H') + m.o2_matrix(P))
+        H0 = np.array(H.subs({s_sym: 0, hs1: 0, hs2: 0, hl: 0, Usym: 0}).tolist(), dtype=float)
+        coefs = [np.array(sp.diff(H.subs(s_sym, 0), x).tolist(), dtype=float) for x in syms]
+        return H0, coefs
+
+    H3_0, H3_c = decomp(2, 1)   # cation
+    H4_0, H4_c = decomp(2, 2)   # neutral
+
+    def Egs(H0, coefs, hs1v, hs2v, hlv, Uv=0):
+        H = H0 + hs1v * coefs[0] + hs2v * coefs[1] + hlv * coefs[2] + Uv * coefs[3]
+        H = (H + H.T) / 2
+        return np.linalg.eigvalsh(H)[0]
+
+    etas = np.linspace(-1.0, 1.0, 401)
+    h_l_vals = [-0.15, -0.3, -0.6]
+    colors = ['C0', 'C2', 'C3']
+
+    fig, ax = plt.subplots(1, 3, figsize=(12, 3.6))
+
+    # Panel (a):  E_elec(eta) for cation at three h_l values, with closed form
+    for hl_v, col in zip(h_l_vals, colors):
+        E_num = np.array([Egs(H3_0, H3_c, -1 - e / 2, -1 + e / 2, hl_v, 0) for e in etas])
+        ax[0].plot(etas, E_num, color=col, lw=1.8, label=rf'$h_l = {hl_v}$')
+        # Overlay closed form 3 h_s - sqrt(eta^2/4 + 4 h_l^2),  h_s = -1
+        E_cf = -3 - np.sqrt(etas**2 / 4 + 4 * hl_v**2)
+        ax[0].plot(etas, E_cf, color=col, ls=':', lw=1)
+    ax[0].set_xlabel(r'$\eta = h_{s,1} - h_{s,2}$')
+    ax[0].set_ylabel(r'$E_{\mathrm{elec}}(\eta) / |h_s|$')
+    ax[0].set_title(r'(a)  cation $E_{\mathrm{elec}}(\eta)$')
+    ax[0].legend(fontsize=9, loc='lower center'); ax[0].grid(alpha=0.3)
+    ax[0].text(0.6, -3.05, 'dotted: closed form', fontsize=9,
+               style='italic', color='0.3')
+
+    # Panel (b):  E_tot(eta) = E_elec(eta) + (1/2) k eta^2
+    #             at h_l = -0.3 (k_crit = 1/(8*0.3) ~ 0.417), for several k values
+    hl_v = -0.3
+    k_crit = 1 / (8 * abs(hl_v))
+    E_elec_arr = np.array([Egs(H3_0, H3_c, -1 - e / 2, -1 + e / 2, hl_v, 0) for e in etas])
+    for k, ls in zip([0.1, 0.3, k_crit, 0.6, 1.0], ['-', '-', '--', '-', '-']):
+        Etot = E_elec_arr + 0.5 * k * etas**2
+        # Subtract value at eta=0 for visual clarity
+        Etot -= Etot[len(etas) // 2]
+        label = f'$k = {k:.2f}$'
+        if abs(k - k_crit) < 1e-6:
+            label = rf'$k = k_{{\mathrm{{crit}}}} = 1/(8|h_l|) = {k_crit:.3f}$'
+            ax[1].plot(etas, Etot, 'k', lw=1.6, ls=ls, label=label)
+        else:
+            ax[1].plot(etas, Etot, lw=1.4, ls=ls, label=label)
+    ax[1].axhline(0, color='0.6', lw=0.6)
+    ax[1].set_xlabel(r'$\eta = h_{s,1} - h_{s,2}$')
+    ax[1].set_ylabel(r'$E_{\mathrm{tot}}(\eta) - E_{\mathrm{tot}}(0)$')
+    ax[1].set_title(rf'(b)  cation  $E_{{\mathrm{{tot}}}}$ at $h_l = {hl_v}$')
+    ax[1].legend(fontsize=9); ax[1].grid(alpha=0.3)
+    ax[1].set_ylim(-0.1, 0.15)
+
+    # Panel (c):  charge-induced reorganisation  --  4e vs 3e curvature
+    eps = 0.01
+    h_l_scan = np.linspace(-0.95, -0.05, 31)
+    curv3 = []; curv4 = []
+    for hl_v in h_l_scan:
+        E3_0 = Egs(H3_0, H3_c, -1, -1, hl_v, 0)
+        E3_p = Egs(H3_0, H3_c, -1 - eps / 2, -1 + eps / 2, hl_v, 0)
+        curv3.append(2 * (E3_p - E3_0) / eps**2)
+        E4_0 = Egs(H4_0, H4_c, -1, -1, hl_v, 0)
+        E4_p = Egs(H4_0, H4_c, -1 - eps / 2, -1 + eps / 2, hl_v, 0)
+        curv4.append(2 * (E4_p - E4_0) / eps**2)
+    curv3 = np.array(curv3); curv4 = np.array(curv4)
+    ax[2].plot(np.abs(h_l_scan), curv4, 'o-', color='C0', lw=1.5, ms=4,
+               label='4e (neutral)')
+    ax[2].plot(np.abs(h_l_scan), curv3, 's-', color='C3', lw=1.5, ms=4,
+               label='3e (cation)')
+    # closed-form prediction
+    ax[2].plot(np.abs(h_l_scan), -1 / (8 * np.abs(h_l_scan)), ':', color='C3',
+               lw=1.2, label=r'$-1/(8|h_l|)$  (Eq. 22)')
+    ax[2].axhline(0, color='0.6', lw=0.6)
+    ax[2].set_xlabel(r'$|h_l| / |h_s|$')
+    ax[2].set_ylabel(r'$\partial^2 E_{\mathrm{elec}} / \partial \eta^2$ at $\eta=0$')
+    ax[2].set_title('(c)  charge-induced pseudo-JT')
+    ax[2].legend(fontsize=9); ax[2].grid(alpha=0.3)
+    ax[2].set_ylim(-6, 0.5)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTDIR, 'fig6_disphenoid.pdf'))
+    plt.close()
+    print('  fig6_disphenoid.pdf')
+
+
+# =======================================================================
 if __name__ == '__main__':
     print(f'writing figures to {OUTDIR}/ ...')
     figure_1_h2()
@@ -373,4 +478,5 @@ if __name__ == '__main__':
     figure_3_degeneracy()
     figure_4_pade()
     figure_5_aromaticity()
+    figure_6_disphenoid()
     print('done.')
