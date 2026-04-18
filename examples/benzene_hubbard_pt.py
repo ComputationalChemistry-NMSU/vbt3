@@ -154,47 +154,51 @@ for mi, (_, vm) in enumerate(eig_data):
     for ni, (_, vn) in enumerate(eig_data):
         V_mn[mi, ni] = sp.simplify((vm.T * V_red * vn)[0, 0])
 
-E1 = V_mn[0, 0]
+# Recursion:  |psi_n> = R [(V - E_1) |psi_{n-1}>  -  sum_{k=2}^{n-1} E_k |psi_{n-k}>]
+#              E_{n+1} = <0 | V | psi_n>
+# Work in the eigenbasis of H_0 so R is diagonal and the recursion is cheap.
+E0_g = eig_data[0][0]
+eig_E = [eig_data[i][0] for i in range(Nd)]
+V_eig = V_mn   # already in the H_0 eigenbasis (eig_data is orthonormal in D-metric)
 
-E2 = 0
-for ni in range(Nd):
-    if ni == 0:
-        continue
-    En = eig_data[ni][0]
-    E2 += V_mn[0, ni] ** 2 / (E0 - En)
-E2 = sp.simplify(E2)
+r_diag = [sp.Rational(0)] * Nd
+for n in range(1, Nd):
+    denom = E0_g - eig_E[n]
+    if denom != 0:
+        r_diag[n] = sp.Rational(1) / denom
 
-E3a = 0
-E3b = 0
-for ni in range(1, Nd):
-    En = eig_data[ni][0]
-    for mi in range(1, Nd):
-        Em = eig_data[mi][0]
-        E3a += V_mn[0, ni] * V_mn[ni, mi] * V_mn[mi, 0] / ((E0 - En) * (E0 - Em))
-    E3b += V_mn[0, ni] ** 2 / (E0 - En) ** 2
-E3 = sp.simplify(E3a - E1 * E3b)
+n_max = 5          # |psi_5> lets us read off E_6
+psi = [None] * (n_max + 1)
+psi[0] = [sp.Rational(0)] * Nd
+psi[0][0] = sp.Rational(1)
 
-E4a = E4b = E4c = E4d = 0
-for ni in range(1, Nd):
-    En = eig_data[ni][0]
-    for mi in range(1, Nd):
-        Em = eig_data[mi][0]
-        for li in range(1, Nd):
-            El = eig_data[li][0]
-            E4a += V_mn[0, ni] * V_mn[ni, mi] * V_mn[mi, li] * V_mn[li, 0] \
-                   / ((E0 - En) * (E0 - Em) * (E0 - El))
-        E4b += V_mn[0, ni] * V_mn[ni, mi] * V_mn[mi, 0] \
-               / ((E0 - En) ** 2 * (E0 - Em))
-    E4c += V_mn[0, ni] ** 2 / (E0 - En) ** 2
-    E4d += V_mn[0, ni] ** 2 / (E0 - En) ** 3
-E4 = sp.simplify(E4a - 2 * E1 * E4b - E2 * E4c + E1 ** 2 * E4d)
+E_coef = [sp.Rational(0)] * (n_max + 2)
+E_coef[0] = E0_g
+E_coef[1] = V_eig[0, 0]
+
+for n in range(1, n_max + 1):
+    rhs = [sum(V_eig[m, l] * psi[n - 1][l] for l in range(Nd)) for m in range(Nd)]
+    for m in range(Nd):
+        rhs[m] -= E_coef[1] * psi[n - 1][m]
+    for k in range(2, n):
+        for m in range(Nd):
+            rhs[m] -= E_coef[k] * psi[n - k][m]
+
+    psi[n] = [sp.simplify(r_diag[m] * rhs[m]) if r_diag[m] != 0 else sp.Rational(0)
+              for m in range(Nd)]
+    E_coef[n + 1] = sp.simplify(sum(V_eig[0, m] * psi[n][m] for m in range(Nd)))
+
+E1, E2, E3, E4 = E_coef[1], E_coef[2], E_coef[3], E_coef[4]
+E5, E6 = E_coef[5], E_coef[6]
 
 print(f"\nRayleigh-Schrodinger coefficients (h = -1, s = 0):")
 print(f"  E_0 = {E0}")
 print(f"  E_1 = {E1}                       # mean-field double occupancy")
 print(f"  E_2 = {E2}          # MP2, rational")
-print(f"  E_3 = {E3}                        # particle-hole symmetry at half-filling")
+print(f"  E_3 = {E3}                        # odd order vanishes (particle-hole symmetry)")
 print(f"  E_4 = {E4}")
+print(f"  E_5 = {E5}                        # odd order vanishes")
+print(f"  E_6 = {E6}")
 
 
 # --- 5. why is E_2 = -29/288 ? --------------------------------------------
