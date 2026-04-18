@@ -258,6 +258,64 @@ Worked examples most directly supporting the findings:
 
 ---
 
+## References
+
+*Preliminary list. Citations marked † should be verified for exact volume / page before submission; most are readily available on the publishers' or authors' webpages.*
+
+**Valence bond theory and resonance.**
+
+1. Heitler, W.; London, F. Wechselwirkung neutraler Atome und homöopolare Bindung nach der Quantenmechanik. *Z. Phys.* **1927**, *44*, 455–472. †
+2. Pauling, L. The Nature of the Chemical Bond. Application of Results Obtained from the Quantum Mechanics and from a Theory of Paramagnetic Susceptibility to the Structure of Molecules. *J. Am. Chem. Soc.* **1931**, *53*, 1367–1400.
+3. Pauling, L. *The Nature of the Chemical Bond*, 3rd ed.; Cornell University Press: Ithaca, NY, 1960.
+4. Wheland, G. W. *Resonance in Organic Chemistry*; Wiley: New York, 1955.
+5. Rumer, G. Zur Theorie der Spinvalenz. *Göttinger Nachr.* **1932**, 337–341. †
+6. Cooper, D. L.; Gerratt, J.; Raimondi, M. Modern Valence Bond Theory. *Chem. Rev.* **1991**, *91*, 929–964.
+7. Shaik, S.; Hiberty, P. C. *A Chemist's Guide to Valence Bond Theory*; Wiley: Hoboken, NJ, 2008.
+8. Chen, Z.; Wu, W. Ab Initio Valence Bond Theory: A Brief History, Recent Developments, and Near Future. *J. Chem. Phys.* **2020**, *153*, 090902.
+
+**Hückel theory and aromaticity.**
+
+9. Hückel, E. Quantentheoretische Beiträge zum Benzolproblem. *Z. Phys.* **1931**, *70*, 204–286. †
+10. Streitwieser, A. *Molecular Orbital Theory for Organic Chemists*; Wiley: New York, 1961.
+11. Coulson, C. A.; O'Leary, B.; Mallion, R. B. *Hückel Theory for Organic Chemists*; Academic Press: London, 1978.
+12. Heilbronner, E.; Bock, H. *The HMO Model and Its Application*; Wiley: New York, 1976.
+
+**Hubbard and correlated-electron models.**
+
+13. Hubbard, J. Electron Correlations in Narrow Energy Bands. *Proc. R. Soc. A* **1963**, *276*, 238–257.
+14. Pariser, R.; Parr, R. G. A Semi-Empirical Theory of the Electronic Spectra and Electronic Structure of Complex Unsaturated Molecules. *J. Chem. Phys.* **1953**, *21*, 466–471; 767–776.
+15. Pople, J. A. Electron Interaction in Unsaturated Hydrocarbons. *Trans. Faraday Soc.* **1953**, *49*, 1375–1385.
+16. Lieb, E. H.; Wu, F. Y. Absence of Mott Transition in an Exact Solution of the Short-Range, One-Band Model in One Dimension. *Phys. Rev. Lett.* **1968**, *20*, 1445–1448.
+17. Essler, F. H. L.; Frahm, H.; Göhmann, F.; Klümper, A.; Korepin, V. E. *The One-Dimensional Hubbard Model*; Cambridge University Press: Cambridge, 2005.
+
+**Perturbation theory and resummation.**
+
+18. Rayleigh, Lord. *The Theory of Sound*, 2nd ed.; Macmillan: London, 1894.
+19. Schrödinger, E. Quantisierung als Eigenwertproblem (Dritte Mitteilung). *Ann. Phys.* **1926**, *80*, 437–490. †
+20. Hirschfelder, J. O.; Byers Brown, W.; Epstein, S. T. Recent Developments in Perturbation Theory. *Adv. Quantum Chem.* **1964**, *1*, 255–374.
+21. Møller, C.; Plesset, M. S. Note on an Approximation Treatment for Many-Electron Systems. *Phys. Rev.* **1934**, *46*, 618–622.
+22. Szabo, A.; Ostlund, N. S. *Modern Quantum Chemistry*; Dover: Mineola, NY, 1996.
+23. Baker, G. A., Jr.; Graves-Morris, P. *Padé Approximants*, 2nd ed.; Cambridge University Press: Cambridge, 1996.
+
+**Symbolic and computational tools.**
+
+24. Meurer, A.; Smith, C. P.; Paprocki, M.; Čertík, O.; Kirpichev, S. B.; Rocklin, M.; Kumar, A.; Ivanov, S.; Moore, J. K.; Singh, S.; Rathnayake, T.; Vig, S.; Granger, B. E.; Muller, R. P.; Bonazzi, F.; Gupta, H.; Vats, S.; Johansson, F.; Pedregosa, F.; Curry, M. J.; Terrel, A. R.; Roučka, Š.; Saboo, A.; Fernando, I.; Kulal, S.; Cimrman, R.; Scopatz, A. SymPy: Symbolic Computing in Python. *PeerJ Comput. Sci.* **2017**, *3*, e103.
+25. McKay, B. D.; Piperno, A. Practical Graph Isomorphism, II. *J. Symb. Comput.* **2014**, *60*, 94–112.
+26. Harris, C. R. et al. Array Programming with NumPy. *Nature* **2020**, *585*, 357–362.
+27. Virtanen, P. et al. SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. *Nat. Methods* **2020**, *17*, 261–272.
+
+**Benzene + ozone / aromaticity disruption.**
+
+28. Criegee, R. Mechanism of Ozonolysis. *Angew. Chem. Int. Ed.* **1975**, *14*, 745–752.
+29. Schleyer, P. v. R.; Maerker, C.; Dransfeld, A.; Jiao, H.; Hommes, N. J. R. v. E. Nucleus-Independent Chemical Shifts: A Simple and Efficient Aromaticity Probe. *J. Am. Chem. Soc.* **1996**, *118*, 6317–6318.
+30. Stanger, A. What Is … Aromaticity: A Critique of the Concept of Aromaticity — Can It Really Be Defined? *Chem. Commun.* **2009**, 1939–1947.
+
+**This work.**
+
+31. Talipov, M. R.; Senanayake, P. vbt3: A Python Package for Symbolic Valence Bond Theory. https://github.com/ComputationalChemistry-NMSU/vbt3, **2026**.
+
+---
+
 ## Appendix A. Figure and scheme captions
 
 Each caption below pins to the worked-example script that produces the underlying data.
