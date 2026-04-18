@@ -203,7 +203,19 @@ Three features distinguish Eq. (15) from Eq. (9):
 
    reproducing E₁ exactly. The `ρ = 3/2` at terminal sites is the quantitative signature of the allyl lone-pair character on atoms a and c.
 
-### 4.6 Cross-system summary
+### 4.6 Application: aromaticity loss in the benzene + O₃ [3+2] cycloaddition
+
+The benzene π-system closed form (Eq. 7) and the full 400-determinant CI machinery together permit a direct analysis of how aromaticity is lost when one C=C bond of benzene is perturbed. We model the [3+2] cycloaddition of ozone with benzene by introducing a single dimensionless reaction coordinate `λ ∈ [0, 1]` that scales the resonance integral on the attacked edge,
+
+**h_ab = λ · h**,   all other ring couplings held at `h`.
+
+This mimics the progressive weakening of the π-interaction on the two carbons pyramidalising toward sp³ as they form the new C–O σ-bonds of the primary ozonide. The five covalent Rumer structures (2 Kekulé + 3 Dewar) and the full 400-determinant CI are both evaluated symbolically at each `λ`.
+
+The dominant qualitative signature of the aromaticity loss is the collapse of the Kekulé resonance pair onto the surviving structure. At `λ = 1` (aromatic benzene) both Kekulé forms carry equal Chirgwin–Coulson weight (each 0.33 of the covalent wavefunction) and all three Dewar structures are equally weighted (each 0.11). As `λ` decreases, the Kekulé that contains the attacked `a–b` edge (Kek₁) is destabilised, its weight drops from 0.33 to 0.08 by `λ = 0`, while the surviving Kek₂ weight grows from 0.33 to 0.61. Dew₁, which uses the attacked edge twice in its long-bond pattern, similarly drops from 0.11 to 0.004; the other two Dewars stay near their initial weights, providing residual delocalisation within the butadiene-like remnant.
+
+Quantitatively, the Kekulé resonance energy `RE_Kek = min{E_Kek₁, E_Kek₂} − E_full` decays from 0.405 |β| at `λ = 1` to 0.170 |β| at `λ = 0` — a halving of the aromatic stabilisation. The full-CI ground state drops from −6.19 to −5.49 |β| over the same scan, and essentially the entire energetic signature of aromaticity loss (~0.7 |β| out of 0.71 |β|) is carried by the ionic subspace: the covalent 5-structure ground state barely changes (−1.04 to −0.99 |β|) because the surviving Kekulé contains enough intact π-bonds to replace the lost one. This is a clean quantitative illustration of the familiar chemical picture: *aromaticity is a many-structure phenomenon, and removing a single bond does not destroy it immediately — it redistributes over the remaining Kekulé–Dewar manifold, with the binding energy increasingly carried by charge-separated (ionic) configurations.* 
+
+### 4.7 Cross-system summary
 
 | System | Dets | `A_1` block | `E_0 / t` | Closed form for `E(U)` |
 |---|---|---|---|---|
@@ -237,9 +249,27 @@ on the branch `two-electron-integrals`.
 
 Worked examples most directly supporting the findings:
 
-- `benzene_aromaticity_loss.py` — Section 4.1; aromaticity loss under asymmetric perturbation.
+- `benzene_aromaticity_loss.py` — Section 4.6; aromaticity loss under asymmetric perturbation.
 - `benzene_symmetry_demo.py` — Section 4.2; degeneracy analysis and orbit-sum reduction.
 - `h2_hubbard_bond.py` — Section 4.5; H₂ Hubbard closed form.
 - `allyl_hubbard_pt.py` — Section 4.5; 3c4e PT series.
-- `benzene_hubbard_pt.py` — Sections 4.3 and MP2 decoding; benzene RS series through E₆.
+- `benzene_hubbard_pt.py` — Sections 4.3; benzene RS series through E₆ and MP2 decoding.
 - `benzene_hubbard_pade.py` — Section 4.4; Padé resummation.
+
+---
+
+## Appendix A. Figure and scheme captions
+
+Each caption below pins to the worked-example script that produces the underlying data.
+
+**Scheme 1. The five covalent Rumer structures of benzene.** Two Kekulé resonance forms (a-b, c-d, e-f) and (b-c, d-e, f-a), together with three Dewar "long-bond" structures (a-d, b-c, e-f), (a-b, c-f, d-e), and (a-f, b-e, c-d). Bonds are drawn as singlet-coupled orbital pairs; Dewar structures involve one bond across the ring. *Data source: manually constructed; dimensions and basis used in `examples/benzene_aromaticity_loss.py` and `examples/benzene_hubbard_pt.py`.*
+
+**Figure 1. H₂ Hubbard dimer: energy and bond character as a function of on-site repulsion.** Panel (a): ground-state energy E(U, h) (Eq. 13, solid line) with the bare Hückel limit `−2|h|` at `U = 0` and the asymptote `E ≈ −4t²/U` at `U → ∞`. Panel (b): Chirgwin–Coulson weights of the Heitler–London covalent and symmetric-ionic VB structures (Eq. 14). The `w_cov = w_ion = 1/2` point at `U = 0` identifies restricted Hartree–Fock as a 50/50 covalent-ionic superposition; the crossover near `U ≈ 4t` marks the transition to a predominantly covalent bond. *Data: `examples/h2_hubbard_bond.py`.*
+
+**Figure 2. Hamiltonian structure and PT convergence for the allyl anion (3c4e).** Panel (a): the 9×9 H matrix in the determinantal basis and its block-diagonal form in the `{|cov⟩, |ion₊⟩, |ion₋⟩, |trip⟩}`-type symmetry-adapted basis; the ground state lies in the 5-dim `σ = +1` block. Panel (b): partial sums `Σ_{k=0}^{n} E_k U^k` from Eq. (15) compared to the exact ground-state energy. Convergence is accurate for `u ≲ 4` and breaks down around `u ≈ 7`. *Data: `examples/allyl_hubbard_pt.py`.*
+
+**Figure 3. Degeneracy spectrum of the benzene full-CI Hamiltonian.** Histogram of eigenvalue multiplicities at `h = −1`, `s = 0.2`, `U = 0`: the multiplicities `1, 4, 8, 12, 22, 25, 28, 44, 60` match the block dimensions of `D₆` irreps acting on the 400-determinant basis and are extracted automatically by `vbt3.symmetry.degenerate_block_basis` — no group-theoretic input is provided. The 38-dim `A₁g` block that hosts the ground state is highlighted. *Data: `examples/benzene_symmetry_demo.py`.*
+
+**Figure 4. Benzene Hubbard ground-state energy: Taylor series vs. Padé resummation vs. exact.** Log-scale comparison of `|E(U) − E_exact|` against exact diagonalisation across six decades in `U`, for (i) the 6th-order Taylor series (Eq. 9, dashed), (ii) the [2/4] Padé approximant (Eq. 11, solid), and (iii) the [3/3] Padé (dotted). The Taylor series fails at `u ≳ 4`; the [2/4] Padé retains sign- and magnitude-correctness through the full Heisenberg strong-coupling regime because its denominator has higher degree than its numerator (required for the correct `1/U` asymptote). *Data: `examples/benzene_hubbard_pt.py` + `examples/benzene_hubbard_pade.py`.*
+
+**Figure 5. Aromaticity loss in benzene + O₃ cycloaddition: Rumer weights and resonance energy along the reaction coordinate.** Panel (a): Chirgwin–Coulson weights of each of the 5 covalent Rumer structures vs `λ = h_ab / h`. Kek₁ and Dew₁ (which use the attacked `a-b` edge) collapse toward zero; Kek₂ grows to dominate; Dew₂ and Dew₃ remain roughly constant. Panel (b): Kekulé resonance energy `RE_Kek(λ) = min{E_Kek₁, E_Kek₂} − E_full(λ)` halves from 0.405 |β| to 0.170 |β| over the scan. Panel (c): full-CI ground-state energy (solid) vs 5-structure covalent approximation (dashed), showing that essentially the entire energetic signature of aromaticity loss is carried by the ionic subspace. *Data: `examples/benzene_aromaticity_loss.py`.*
